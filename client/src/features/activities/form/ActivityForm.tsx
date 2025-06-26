@@ -1,17 +1,19 @@
 import { Box, Button, Paper, TextField, Typography } from "@mui/material";
 import type { FormEvent } from "react";
 import { useActivities } from "../../../lib/hooks/useActivities";
-
-type Props = {
-  activity?: Activity; // Optional, if you need to pass an activity
-  closeForm: () => void;
-}
+import { useNavigate, useParams } from "react-router";
 
 
-export default function ActivityForm({ closeForm, activity }: Props) {
 
-  const { updateActivity, createActivity } = useActivities();
+export default function ActivityForm() {
+   const {id} = useParams()
 
+  const { updateActivity, createActivity, 
+    activity, isLoadingActivity } = useActivities(id);
+
+  const navigate = useNavigate()
+ 
+  
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -27,18 +29,26 @@ export default function ActivityForm({ closeForm, activity }: Props) {
     if (activity) {
       data.id = activity.id; // Ensure the ID is included if updating an existing activity
       await updateActivity.mutateAsync(data as unknown as Activity);
-      closeForm();
-    } else { 
-      await createActivity.mutateAsync(data as unknown as Activity);
-      closeForm();
+      navigate(`/activities/${activity.id}`)
+    } else {
+      createActivity.mutate(data as unknown as Activity, {
+        onSuccess: (id) => {
+          navigate(`/activities/${id}`)
+        }
+      }
+
+
+      );
+
     }
   };
 
+  if(isLoadingActivity) return <Typography> Loading activity... </Typography>
 
   return (
     <Paper sx={{ padding: 3, borderRadius: 3 }}>
       <Typography variant="h5" gutterBottom color="primary">
-        Create Activity
+       {activity ? 'Edit Activity' : 'Create Activity'}
       </Typography>
 
       <Box component="form" onSubmit={handleSubmit}
@@ -54,12 +64,12 @@ export default function ActivityForm({ closeForm, activity }: Props) {
         <TextField name="venue" label='Venue' defaultValue={activity?.venue} />
 
         <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 3 }}>
-          <Button onClick={closeForm} color="inherit">Cancel</Button>
+          <Button color="inherit">Cancel</Button>
           <Button
             type="submit"
             color="success"
             variant="contained"
-            disabled={updateActivity.isPending || createActivity.isPending } // Disable button while mutation is pending
+            disabled={updateActivity.isPending || createActivity.isPending} // Disable button while mutation is pending
           >
             Submit
           </Button>

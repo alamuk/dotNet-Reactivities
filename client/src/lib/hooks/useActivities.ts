@@ -6,7 +6,7 @@ import agent from "../api/agent";
 // to perform mutations (create, update, delete) to the server.
 
 
-export const useActivities = () => {
+export const useActivities = (id?: string) => {
  const queryClient = useQueryClient();
 
 const { data: activities, isPending } = useQuery({
@@ -17,6 +17,20 @@ const { data: activities, isPending } = useQuery({
     }
   });
  
+const {data: activity, isLoading: isLoadingActivity} = useQuery({
+  queryKey: ['activities', id],
+  queryFn: async () => {
+
+    const response = await agent.get<Activity>(`/activities/${id}`)
+    return response.data;
+  },
+  enabled: !!id
+
+})
+
+
+
+
   const updateActivity = useMutation({
     mutationFn: async (activity: Activity) => {
       await agent.put('/activities', activity);
@@ -31,7 +45,8 @@ const { data: activities, isPending } = useQuery({
 
  const createActivity = useMutation({
     mutationFn: async (activity: Activity) => {
-      await agent.post('/activities', activity);
+      const response = await agent.post('/activities', activity);
+      return response.data;
     },
     onSuccess: async () => {
        // Invalidate the 'activities' query to refetch the data
@@ -54,6 +69,14 @@ const deleteActivity = useMutation({
   })
 
 
-  return { activities, isPending, updateActivity, createActivity, deleteActivity};
+  return { 
+    activities, 
+    isPending, 
+    updateActivity, 
+    createActivity, 
+    deleteActivity, 
+    activity, 
+    isLoadingActivity
+  };
 
 }
